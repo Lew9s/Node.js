@@ -8,6 +8,12 @@ const db = require('../db/index');
 // 导入 bcryptjs 这个包，对密码进行加密
 const bcrypt = require('bcryptjs');
 
+// 导入 jsonwebtoken 包，生成 token
+const jwt = require('jsonwebtoken');
+// 导入全局配置文件
+const config = require('../config');
+const { jwtSecretKey } = require('../config');
+
 // 注册用户的处理函数
 exports.register = (req, res) => {
     const userinfo = req.body
@@ -52,5 +58,30 @@ exports.register = (req, res) => {
 
 // 登录的处理函数
 exports.login = (req, res) => {
-    res.send("login ok")
+    // 接收表单的数据
+    const userinfo = req.body
+    // 定义 sql 语句
+    const sql = 'select * from ev_users where username = ?'
+    // 执行 sql 语句，根据用户名查询用户的信息
+    db.query(sql, userinfo.username, (err, results) => {
+        // 执行sql 语句失败
+        if(err) return res.cc(err)
+        // 执行 sql 语句成功，但是获取的数据条数不等于 1
+        if(results.length != 1) return res.cc('登录失败')
+
+        // 判断密码是否正确
+        const compareResult = bcrypt.compareSync(userinfo.password, results[0].password)
+        if(!compareResult) return res.cc('登录失败')
+
+        // 在服务器端生成 token 的字符串
+        const user = {...results[0], password: '', user_pic: ''}
+        // 对用户的信息进行加密，生成 token 字符串
+        const tokenStr = jwt.sign(user, config.jwtSecretKey, {expiresIn: config.expiresIn})
+        // 调用 res.send() 将 token 响应给客户端
+        res.send({
+            status: 0,
+            message: '登录成功',
+            token: 'Bearer ' + tokenStr
+        }) 
+    })
 }
