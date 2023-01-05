@@ -37,6 +37,10 @@ app.use('/api', userRouter)
 const userinfoRouter = require('./router/userinfo');
 app.use('/my', userinfoRouter);
 
+// 导入并使用文章分类路由模块
+const artCateRouter = require('./router/article');
+app.use('/my/article', artCateRouter);
+
 // 定义错误级别中间件
 app.use((err, req, res, next) => {
     // 验证失败导致的错误
